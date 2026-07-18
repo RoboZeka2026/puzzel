@@ -1,0 +1,64 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f7f6;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #333;
+}
+
+h1 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+.container {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 500px;
+    width: 100%;
+}
+
+video {
+    width: 100%;
+    border-radius: 10px;
+    background: #000;
+    transform: scaleX(-1); /* Aynalama efekti (özçekim gibi rahat kullanım için) */
+}
+
+button {
+    margin-top: 20px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(52, 152, 219, 0.3);
+}
+
+button:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+}
+
+#result {
+    margin-top: 20px;
+    padding: 15px;
+    background: #eef2f3;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+    border-left: 5px solid #3498db;
+}
