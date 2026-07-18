@@ -1,18 +1,19 @@
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const refCanvas = document.getElementById('ref-canvas');
+const zoomCanvas = document.getElementById('zoom-canvas'); // Zoom için yeni canvas
 const captureRefBtn = document.getElementById('capture-ref-btn');
 const capturePieceBtn = document.getElementById('capture-piece-btn');
 const previewContainer = document.getElementById('preview-container');
+const zoomContainer = document.getElementById('zoom-container');
 const statusText = document.getElementById('status');
 
 let refImageMat = null;
 
-// Mobil için ideal kamera ayarları
 const constraints = {
     video: {
         facingMode: { exact: "environment" },
-        width: { ideal: 1280 }, // Hız ve doğruluk dengesi için 720p-1080p arası idealdir
+        width: { ideal: 1280 },
         height: { ideal: 720 },
         advanced: [{ focusMode: "continuous" }]
     }
@@ -29,10 +30,10 @@ navigator.mediaDevices.getUserMedia(constraints)
             .catch(e => { statusText.innerText = "Kamera açılamadı."; });
     });
 
-// 1. Kutu Resmini Çek
+// 1. Kutu Resmini Kaydet
 captureRefBtn.addEventListener('click', () => {
     if (!window.cv || !cv.Mat) {
-        alert("Zeka motoru (OpenCV) henüz tamamen yüklenmedi, birkaç saniye sonra tekrar deneyin.");
+        alert("Zeka motoru yükleniyor, lütfen bekleyin.");
         return;
     }
 
@@ -49,10 +50,10 @@ captureRefBtn.addEventListener('click', () => {
     capturePieceBtn.style.backgroundColor = "#2ecc71";
     capturePieceBtn.style.color = "white";
     
-    statusText.innerHTML = "<span style='color:#2ecc71; font-weight:bold;'>Kutu Resmi Kaydedildi!</span><br>Şimdi parçayı halkaya ortalayıp '2. Parçayı Tara' butonuna basın.";
+    statusText.innerHTML = "<span style='color:#2ecc71; font-weight:bold;'>Kutu Kaydedildi!</span><br>Parçayı vizöre ortalayıp '2. Parçayı Tara' butonuna basın.";
 });
 
-// 2. Parçayı Çek
+// 2. Parçayı Tara
 capturePieceBtn.addEventListener('click', () => {
     if (!refImageMat) return;
 
@@ -61,22 +62,20 @@ capturePieceBtn.addEventListener('click', () => {
     canvas.height = video.videoHeight;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     
-    statusText.innerText = "Parça analiz ediliyor ve aranıyor...";
+    statusText.innerText = "Parça aranıyor ve zoomlanıyor...";
     setTimeout(matchPuzzlePiece, 150);
 });
 
-// 3. Gelişmiş Eşleştirme Algoritması (Homografi ve RANSAC filtreli)
+// 3. Eşleştir, Kırp ve Zoom Yap
 function matchPuzzlePiece() {
     try {
         let srcPiece = cv.imread(canvas);
         let grayPiece = new cv.Mat();
         let grayRef = new cv.Mat();
 
-        // Renk uzayını gri tonlamaya çevir (Hız ve performans için)
         cv.cvtColor(srcPiece, grayPiece, cv.COLOR_RGBA2GRAY);
         cv.cvtColor(refImageMat, grayRef, cv.COLOR_RGBA2GRAY);
 
-        // ORB Nesne algılayıcı (Detay algılamayı 1000 noktaya çıkardık)
         let orb = new cv.ORB(1000, 1.2, 8, 31, 0, 2, cv.ORB_HARRIS_SCORE, 31, 20);
         let keypoints1 = new cv.KeyPointVector();
         let keypoints2 = new cv.KeyPointVector();
@@ -87,32 +86,25 @@ function matchPuzzlePiece() {
         orb.detectAndCompute(grayRef, new cv.Mat(), keypoints2, descriptors2);
 
         if (descriptors1.empty() || descriptors2.empty()) {
-            statusText.innerHTML = `<span style="color:#e74c3c; font-weight:bold;">❌ Görüntü çok belirsiz.</span><br>Parçayı daha iyi ışıkta tekrar çekin.`;
-            // Belleği temizle
+            statusText.innerHTML = `<span style="color:#e74c3c; font-weight:bold;">❌ Net değil.</span> Parçayı daha iyi ışıkta çekin.`;
             cleanup([srcPiece, grayPiece, grayRef, orb, keypoints1, keypoints2, descriptors1, descriptors2]);
             return;
         }
 
-        // Brute-Force Eşleştirici
         let bf = new cv.BFMatcher(cv.NORM_HAMMING, true);
         let matches = new cv.DMatchVector();
         bf.match(descriptors1, descriptors2, matches);
 
-        // En iyi eşleşmeleri mesafelerine göre sırala
         let matchesArray = [];
         for (let i = 0; i < matches.size(); i++) {
             matchesArray.push(matches.get(i));
         }
         matchesArray.sort((a, b) => a.distance - b.distance);
-
-        // Sadece en kaliteli eşleşmeleri filtrele (Maksimum ilk 50 nokta)
         let goodMatches = matchesArray.slice(0, Math.min(50, matchesArray.length));
 
-        // Yanıltıcı eşleşmeleri (Outliers) temizlemek ve geometrik doğrulamak için en az 8 iyi nokta şartı
         if (goodMatches.length > 8) {
             let points1 = [];
             let points2 = [];
-
             for (let i = 0; i < goodMatches.length; i++) {
                 points1.push(keypoints1.get(goodMatches[i].queryIdx).pt.x);
                 points1.push(keypoints1.get(goodMatches[i].queryIdx).pt.y);
@@ -122,82 +114,94 @@ function matchPuzzlePiece() {
 
             let mat1 = cv.matFromArray(points1.length / 2, 1, cv.CV_32FC2, points1);
             let mat2 = cv.matFromArray(points2.length / 2, 1, cv.CV_32FC2, points2);
-
-            // RANSAC yöntemi ile hatalı noktaları ayıklayıp dönüşüm matrisini buluyoruz
             let mask = new cv.Mat();
             let H = cv.findHomography(mat1, mat2, cv.RANSAC, 5.0, mask);
 
-            // Maske içindeki başarılı (inlier) nokta sayısını sayalım
             let inlierCount = 0;
+            let avgX = 0, avgY = 0;
             for (let i = 0; i < mask.rows; i++) {
-                if (mask.data[i] === 1) inlierCount++;
+                if (mask.data[i] === 1) {
+                    inlierCount++;
+                    let pt = keypoints2.get(goodMatches[i].trainIdx).pt;
+                    avgX += pt.x;
+                    avgY += pt.y;
+                }
             }
 
-            // Eğer RANSAC sonrasında da yeterli tutarlı nokta kaldıysa nesne kesin oradadır
             if (!H.empty() && inlierCount > 5) {
-                // Kutu görselini canvas'a temizce geri yükle
+                avgX = Math.round(avgX / inlierCount);
+                avgY = Math.round(avgY / inlierCount);
+
+                // --- 🔍 AKILLI ZOOM VE KIRPMA ALGORİTMASI ---
+                // Parçanın etrafında 200x200 piksellik bir zoom penceresi belirle
+                let zoomSize = 200; 
+                let startX = Math.max(0, avgX - zoomSize / 2);
+                let startY = Math.max(0, avgY - zoomSize / 2);
+                
+                // Kutu taşmalarını engelle
+                if (startX + zoomSize > refImageMat.cols) startX = refImageMat.cols - zoomSize;
+                if (startY + zoomSize > refImageMat.rows) startY = refImageMat.rows - zoomSize;
+
+                let rect = new cv.Rect(startX, startY, zoomSize, zoomSize);
+                let croppedMat = refImageMat.roi(rect); // Bölgeyi matris olarak kırp
+
+                // Ekrana kırpılan zoom alanını bas
+                zoomContainer.style.display = "block";
+                cv.imshow('zoom-canvas', croppedMat);
+                croppedMat.delete();
+
+                // Zoom yapılan alana dev bir hedef dairesi çiz (Kullanıcı nokta atışı görsün)
+                const zoomCtx = zoomCanvas.getContext('2d');
+                let localX = avgX - startX;
+                let localY = avgY - startY;
+
+                zoomCtx.beginPath();
+                zoomCtx.arc(localX, localY, 25, 0, 2 * Math.PI);
+                zoomCtx.lineWidth = 5;
+                zoomCtx.strokeStyle = '#e74c3c';
+                zoomCtx.stroke();
+                
+                // Artı işareti
+                zoomCtx.beginPath();
+                zoomCtx.moveTo(localX - 10, localY); zoomCtx.lineTo(localX + 10, localY);
+                zoomCtx.moveTo(localX, localY - 10); zoomCtx.lineTo(localX, localY + 10);
+                zoomCtx.lineWidth = 3;
+                zoomCtx.strokeStyle = '#fff';
+                zoomCtx.stroke();
+                // ---------------------------------------------
+
+                // Genel kutuda da yerini ufakça işaretle
                 cv.imshow('ref-canvas', refImageMat);
                 const refCtx = refCanvas.getContext('2d');
-
-                // Arama alanının ortalama merkez koordinatını hesapla
-                let avgX = 0, avgY = 0;
-                let validPoints = 0;
-                for (let i = 0; i < goodMatches.length; i++) {
-                    if (mask.data[i] === 1) {
-                        let pt = keypoints2.get(goodMatches[i].trainIdx).pt;
-                        avgX += pt.x;
-                        avgY += pt.y;
-                        validPoints++;
-                    }
-                }
-                avgX = Math.round(avgX / validPoints);
-                avgY = Math.round(avgY / validPoints);
-
-                // GÖRSEL İŞARETLEME: Bölgeye şık bir hedef çemberi ve artı yerleştir
                 refCtx.beginPath();
-                refCtx.arc(avgX, avgY, 45, 0, 2 * Math.PI);
-                refCtx.lineWidth = 6;
-                refCtx.strokeStyle = '#e74c3c'; // Canlı kırmızı
-                refCtx.shadowColor = 'black';
-                refCtx.shadowBlur = 10;
+                refCtx.arc(avgX, avgY, 30, 0, 2 * Math.PI);
+                refCtx.lineWidth = 4;
+                refCtx.strokeStyle = 'yellow';
                 refCtx.stroke();
-
-                // Merkezdeki hassas artı (+) çizgisi
-                refCtx.beginPath();
-                refCtx.moveTo(avgX - 15, avgY); refCtx.lineTo(avgX + 15, avgY);
-                refCtx.moveTo(avgX, avgY - 15); refCtx.lineTo(avgX, avgY + 15);
-                refCtx.lineWidth = 3;
-                refCtx.strokeStyle = '#ffffff'; // İç artı beyaz olsun ki kırmızı üstünde net görünsün
-                refCtx.stroke();
-                refCtx.shadowBlur = 0; // Gölgeyi sıfırla
 
                 statusText.innerHTML = `
-                    <div style="background-color: #27ae60; color: white; padding: 12px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3)">
-                        <strong>🎯 PARÇA BULUNDU! (%${Math.min(100, Math.round((inlierCount/goodMatches.length)*100))})</strong><br>
-                        Aşağıdaki referans kutu resminde <span style="color:yellow; font-weight:bold;">HEDEFLENEN ALANA</span> bakın.
+                    <div style="background-color: #27ae60; color: white; padding: 12px; border-radius: 8px;">
+                        <strong>🎯 PARÇA BULUNDU VE ZOOM YAPILDI!</strong><br>
+                        Büyüteç altındaki bölgeyi kutuda bularak yerleştirin.
                     </div>
                 `;
-                previewContainer.scrollIntoView({ behavior: 'smooth' });
-            } else {
-                statusText.innerHTML = `<span style="color:#e74c3c; font-weight:bold;">❌ Parça eşleşmedi.</span><br>Kutudaki doğru bölgeye yaklaştığınızdan veya ışığın açısını değiştirdiğinizden emin olun.`;
-            }
+                zoomContainer.scrollIntoView({ behavior: 'smooth' });
 
-            // Döngü içi OpenCV matrislerini temizle
+            } else {
+                statusText.innerHTML = `<span style="color:#e74c3c; font-weight:bold;">❌ Eşleşme başarısız.</span><br>Açıyı veya ışığı değiştirip tekrar deneyin.`;
+            }
             mat1.delete(); mat2.delete(); mask.delete(); H.delete();
         } else {
-            statusText.innerHTML = `<span style="color:#e74c3c; font-weight:bold;">❌ Yetersiz ortak nokta.</span><br>Parçayı vizörün tam ortasına getirip tekrar taratın.`;
+            statusText.innerHTML = `<span style="color:#e74c3c; font-weight:bold;">❌ Nokta bulunamadı.</span> Görüş alanını kontrol edin.`;
         }
 
-        // Genel Bellek Temizliği
-        cleanup([srcPiece, grayPiece, grayRef, orb, keypoints1, keypoints2, descriptors1, descriptors2, Pigeon = bf, matches]);
-
+        cleanup([srcPiece, grayPiece, grayRef, orb, keypoints1, keypoints2, descriptors1, descriptors2, bf, matches]);
     } catch (error) {
         console.error(error);
-        statusText.innerText = "Sistemsel bir hata oluştu. Lütfen tekrar deneyin.";
+        statusText.innerText = "Hata oluştu, lütfen resmi yenileyip deneyin.";
     }
 }
 
-// Memory leak (bellek sızıntısı) önleyici yardımcı fonksiyon
 function cleanup(matrices) {
     matrices.forEach(m => {
         if (m && typeof m.delete === 'function') {
