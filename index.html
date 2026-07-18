@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mobil Yapboz Çözücü</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Kararlı web derlemesi için resmi OpenCV sürümü -->
     <script async src="https://docs.opencv.org/4.5.5/opencv.js" type="text/javascript"></script>
 </head>
 <body>
@@ -15,7 +14,6 @@
         <!-- Canlı Kamera Görünümü -->
         <div class="camera-container">
             <video id="video" autoplay playsinline muted></video>
-            <!-- Kullanıcının tekil parçayı hizalayacağı kritik halka vizör -->
             <div class="camera-overlay"></div>
         </div>
         
@@ -32,9 +30,15 @@
             <p id="status">Zeka motoru ve kamera yükleniyor, lütfen bekleyin...</p>
         </div>
 
-        <!-- Sonuç Önizleme Alanı -->
+        <!-- YENİ: Otomatik Zoom / Odaklanma Alanı -->
+        <div id="zoom-container" style="display:none;">
+            <p>🔍 YAKINLAŞTIRILMIŞ HEDEF BÖLGE:</p>
+            <canvas id="zoom-canvas"></canvas>
+        </div>
+
+        <!-- Çekilen Kutu Resminin Tam Önizlemesi -->
         <div id="preview-container" style="display:none;">
-            <p>Hedeflenen Kutu Bölgesi Bölgesi:</p>
+            <p>Kutu Resmi Genel Görünüm:</p>
             <canvas id="ref-canvas"></canvas>
         </div>
     </div>
