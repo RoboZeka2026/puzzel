@@ -25,7 +25,7 @@ h1 {
     font-size: 22px;
     text-align: center;
     margin: 10px 0 5px 0;
-    color: #f1c40f; /* Yapboz sarısı accent */
+    color: #f1c40f;
 }
 
 .camera-container {
@@ -44,7 +44,6 @@ video {
     object-fit: cover;
 }
 
-/* Parçayı tam ortaya getirmeleri için geliştirilmiş hedef vizörü */
 .camera-overlay {
     position: absolute;
     top: 50%;
@@ -52,11 +51,10 @@ video {
     transform: translate(-50%, -50%);
     width: 90px;
     height: 90px;
-    border: 3px dashed #f1c40f; /* Dikkat çekici sarı kesikli çizgi */
+    border: 3px dashed #f1c40f;
     border-radius: 50%;
     pointer-events: none;
     background: rgba(241, 196, 15, 0.05);
-    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.2); /* Vizör dışını hafifçe karartır focus sağlar */
 }
 
 .button-group {
@@ -72,12 +70,7 @@ button {
     font-weight: bold;
     border-radius: 14px;
     cursor: pointer;
-    transition: transform 0.1s ease, background-color 0.2s;
     box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-}
-
-button:active {
-    transform: scale(0.97);
 }
 
 #capture-ref-btn {
@@ -96,28 +89,42 @@ button:active {
     border-radius: 14px;
     text-align: center;
     border-left: 5px solid #f1c40f;
+}
+
+/* 🔍 YENİ ODAKLANMA BÜYÜTEÇ ALANI STİLİ */
+#zoom-container {
+    text-align: center;
+    background: #1c2833;
+    padding: 15px;
+    border-radius: 16px;
+    border: 2px solid #27ae60;
+}
+
+#zoom-container p {
     font-size: 14px;
-    line-height: 1.6;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    color: #2ecc71;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+#zoom-canvas {
+    width: 100%; /* Ekran genişliğine yayarak otomatik dijital zoom sağlar */
+    max-width: 300px;
+    aspect-ratio: 1 / 1;
+    border-radius: 12px;
+    border: 3px solid #fff;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.7);
 }
 
 #preview-container {
-    margin-top: 5px;
     text-align: center;
-}
-
-#preview-container p {
-    font-size: 13px;
-    color: #bdc3c7;
-    margin-bottom: 8px;
-    font-weight: 500;
+    opacity: 0.7; /* Arka plandaki genel resim odağı dağıtmasın diye hafif matlaştırıldı */
 }
 
 #ref-canvas {
     width: 100%;
-    max-height: 260px; /* Görsel alanın telefonda daha rahat seçilmesi için genişletildi */
+    max-height: 180px;
     object-fit: contain;
-    border-radius: 12px;
-    border: 2px solid #34495e;
-    background-color: #000;
+    border-radius: 8px;
+    border: 1px solid #444;
 }
