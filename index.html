@@ -2,36 +2,42 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>1000'lik Yapboz Çözücü</title>
+    <!-- Mobil ekranlara tam sığması için viewport ayarı -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobil Yapboz Çözücü</title>
     <link rel="stylesheet" href="style.css">
     <!-- OpenCV.js Kütüphanesi -->
     <script async src="https://docs.opencv.org/4.x/opencv.js" type="text/javascript"></script>
 </head>
 <body>
-    <h1>1000'lik Yapboz Çözücü</h1>
-    
-    <div class="container">
-        <!-- Canlı Kamera Yayını -->
-        <video id="video" autoplay playsinline></video>
+    <div class="app-wrapper">
+        <h1>🧩 1000'lik Yapboz Asistanı</h1>
+        
+        <!-- Canlı Kamera Görünümü -->
+        <div class="camera-container">
+            <video id="video" autoplay playsinline></video>
+            <!-- Kullanıcının parçayı ortalamasına yardım edecek hedef çizgisi -->
+            <div class="camera-overlay"></div>
+        </div>
+        
         <canvas id="canvas" style="display:none;"></canvas>
         
-        <!-- Kontrol Butonları -->
+        <!-- Mobil Buton Grubu (Ekranın altında rahat basılsın diye) -->
         <div class="button-group">
-            <button id="capture-ref-btn">1. Adım: Büyük Resmi Çek</button>
-            <button id="capture-piece-btn" disabled style="background-color: #95a5a6;">2. Adım: Parçayı Tara</button>
+            <button id="capture-ref-btn">📸 1. Kutu Resmini Çek</button>
+            <button id="capture-piece-btn" disabled>🔍 2. Parçayı Tara</button>
         </div>
 
-        <!-- Çekilen Büyük Resmin Önizlemesi -->
-        <div id="preview-container" style="display:none; margin-top:15px; width:100%; text-align:center;">
-            <p style="font-size:12px; color:#7f8c8d; margin:5px 0;">Kaydedilen Büyük Resim:</p>
-            <canvas id="ref-canvas" style="max-width:100%; border: 2px solid #2ecc71; border-radius:5px;"></canvas>
+        <!-- Durum Bildirim Alanı -->
+        <div id="result">
+            <p id="status">Kamera açılıyor, lütfen bekleyin...</p>
         </div>
-    </div>
 
-    <div id="result">
-        <h3>Sistem Durumu:</h3>
-        <p id="status">Lütfen kamerayı yapboz kutusuna doğrultup "Büyük Resmi Çek" butonuna basın.</p>
+        <!-- Çekilen Kutu Resminin Önizlemesi -->
+        <div id="preview-container" style="display:none;">
+            <p>Hafızadaki Kutu Resmi:</p>
+            <canvas id="ref-canvas"></canvas>
+        </div>
     </div>
 
     <script src="app.js"></script>
