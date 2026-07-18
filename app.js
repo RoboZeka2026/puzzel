@@ -8,34 +8,30 @@ const statusText = document.getElementById('status');
 
 let refImageMat = null;
 
-// Mobil Arka Kamerayı En Yüksek Kalitede Açma Ayarları
 const constraints = {
     video: {
-        facingMode: { exact: "environment" }, // Kesinlikle arka kamera
-        width: { ideal: 1920 }, // 1000'lik bulmaca detayları için yüksek çözünürlük
+        facingMode: { exact: "environment" },
+        width: { ideal: 1920 },
         height: { ideal: 1080 },
-        advanced: [{ focusMode: "continuous" }] // Sürekli otomatik odaklama (Destekleyen cihazlar için)
+        advanced: [{ focusMode: "continuous" }]
     }
 };
 
-// Kamerayı Başlat
 navigator.mediaDevices.getUserMedia(constraints)
     .then(stream => { 
         video.srcObject = stream; 
-        statusText.innerText = "Sistem Hazır! Kamerayı kutu resmine dik tutup '1. Kutu Resmini Çek' butonuna basın.";
+        statusText.innerText = "Sistem Hazır! Önce kutu resmini çekin.";
     })
     .catch(err => {
-        console.log("Birinci kamera yöntemi başarısız, alternatif deneniyor...");
-        // Eğer exact environment hata verirse (bazı eski Android tarayıcılarda), normal arka kamerayı dene:
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
             .then(stream => { video.srcObject = stream; })
-            .catch(e => { statusText.innerText = "Kamera izni verilmedi veya arka kamera bulunamadı."; });
+            .catch(e => { statusText.innerText = "Kamera açılamadı."; });
     });
 
-// 1. Adım: Kutu Resmini Çek
+// 1. Kutu Resmini Çek
 captureRefBtn.addEventListener('click', () => {
     if (!window.cv) {
-        alert("Zeka motoru (OpenCV) yükleniyor, lütfen 3 saniye sonra tekrar basın.");
+        alert("Zeka motoru yükleniyor, birazdan tekrar deneyin.");
         return;
     }
 
@@ -49,13 +45,13 @@ captureRefBtn.addEventListener('click', () => {
     
     previewContainer.style.display = "block";
     capturePieceBtn.disabled = false;
-    capturePieceBtn.style.backgroundColor = "#2ecc71"; // Butonu yeşil ve aktif yap
+    capturePieceBtn.style.backgroundColor = "#2ecc71";
     capturePieceBtn.style.color = "white";
     
-    statusText.innerHTML = "<span style='color:#2ecc71; font-weight:bold;'>Kutu Resmi Kaydedildi!</span><br>Şimdi tek bir parçayı kameranın ortasındaki halkaya getirip iyice netleyin ve '2. Parçayı Tara' butonuna basın.";
+    statusText.innerHTML = "<span style='color:#2ecc71; font-weight:bold;'>Kutu Resmi Kaydedildi!</span><br>Şimdi parçayı halkaya ortalayıp '2. Parçayı Tara' butonuna basın.";
 });
 
-// 2. Adım: Parçayı Çek ve Eşleştir
+// 2. Parçayı Çek
 capturePieceBtn.addEventListener('click', () => {
     if (!refImageMat) return;
 
@@ -64,12 +60,11 @@ capturePieceBtn.addEventListener('click', () => {
     canvas.height = video.videoHeight;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     
-    statusText.innerText = "Mobil işlemci analiz ediyor, lütfen telefonu sarsmayın...";
-    
+    statusText.innerText = "Parça aranıyor...";
     setTimeout(matchPuzzlePiece, 150);
 });
 
-// Görüntü İşleme Mantığı
+// 3. Eşleştir ve Resim Üzerinde İşaretle
 function matchPuzzlePiece() {
     try {
         let srcPiece = cv.imread(canvas);
@@ -79,8 +74,7 @@ function matchPuzzlePiece() {
         cv.cvtColor(srcPiece, grayPiece, cv.COLOR_RGBA2GRAY);
         cv.cvtColor(refImageMat, grayRef, cv.COLOR_RGBA2GRAY);
 
-        // ORB Ayarları (Mobilde hızlı çalışması için optimize)
-        let orb = new cv.ORB(500); // En belirgin 500 noktaya odaklan
+        let orb = new cv.ORB(700); // Nokta sayısını doğruluğu artırmak için 700'e çıkardık
         let keypoints1 = new cv.KeyPointVector();
         let keypoints2 = new cv.KeyPointVector();
         let descriptors1 = new cv.Mat();
@@ -100,30 +94,51 @@ function matchPuzzlePiece() {
             let posX = Math.round(keypointInRef.pt.x);
             let posY = Math.round(keypointInRef.pt.y);
 
-            let pctX = Math.round((posX / grayRef.cols) * 100);
-            let pctY = Math.round((posY / grayRef.rows) * 100);
+            // --- GÖRSEL İŞARETLEYİCİ EKLEME ALANI ---
+            // Orijinal kutu resmini canvas'a tekrar temizce çizelim
+            cv.imshow('ref-canvas', refImageMat);
+            
+            // HTML Canvas üzerinde kırmızı bir hedef çemberi çizelim
+            const refCtx = refCanvas.getContext('2d');
+            
+            // Kırmızı büyük bir hedef dairesi
+            refCtx.beginPath();
+            refCtx.arc(posX, posY, 40, 0, 2 * Math.PI); // 40 piksel yarıçapında daire
+            refCtx.lineWidth = 8;
+            refCtx.strokeStyle = 'red';
+            refCtx.stroke();
 
-            let yatayYön = pctX < 33 ? "SOL" : (pctX < 66 ? "ORTA" : "SAĞ");
-            let dikeyYön = pctY < 33 ? "ÜST" : (pctY < 66 ? "ORTA" : "ALT");
+            // Tam merkezine küçük bir artı (+) işareti
+            refCtx.beginPath();
+            refCtx.moveTo(posX - 15, posY);
+            refCtx.lineTo(posX + 15, posY);
+            refCtx.moveTo(posX, posY - 15);
+            refCtx.lineTo(posX, posY + 15);
+            refCtx.lineWidth = 4;
+            refCtx.strokeStyle = 'red';
+            refCtx.stroke();
+            // ----------------------------------------
 
             statusText.innerHTML = `
-                <div style="background-color: #27ae60; color: white; padding: 12px; border-radius: 8px; font-size:15px;">
+                <div style="background-color: #27ae60; color: white; padding: 12px; border-radius: 8px;">
                     <strong>🎯 PARÇA BULUNDU!</strong><br>
-                    <strong>Bölge:</strong> ${dikeyYön} - ${yatayYön} Bölgesi<br>
-                    <strong>Konum:</strong> Soldan %${pctX}, Yukarıdan %${pctY} uzaklıkta.
+                    Aşağıdaki resimde <span style="color:yellow; font-weight:bold;">KIRMIZI HEDEF</span> ile gösterilen yere bakın.
                 </div>
             `;
+
+            // Telefon ekranını otomatik olarak aşağıdaki resme kaydır ki kullanıcı doğrudan görebilsin
+            previewContainer.scrollIntoView({ behavior: 'smooth' });
+
         } else {
-            statusText.innerHTML = `<span style="color:#e74c3c; font-weight:bold;">❌ Eşleşme Sağlanamadı.</span><br>Tavsiye: Parçaya çok yaklaşıp gölge yapmamaya çalışın ve ışığı artırın.`;
+            statusText.innerHTML = `<span style="color:#e74c3c; font-weight:bold;">❌ Eşleşme Sağlanamadı.</span><br>Lütfen ışığı ayarlayıp daha net bir çekim yapın.`;
         }
 
-        // Hafıza Temizliği
         srcPiece.delete(); grayPiece.delete(); grayRef.delete();
         orb.delete(); keypoints1.delete(); keypoints2.delete();
         descriptors1.delete(); descriptors2.delete(); bf.delete(); matches.delete();
 
     } catch (error) {
         console.error(error);
-        statusText.innerText = "Analiz hatası. Lütfen resmi tekrar çekin.";
+        statusText.innerText = "Hata oluştu, lütfen resmi yenileyin.";
     }
 }
