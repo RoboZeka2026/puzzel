@@ -5,33 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>1000'lik Yapboz Çözücü</title>
     <link rel="stylesheet" href="style.css">
-    <!-- OpenCV.js Kütüphanesini Yüklüyoruz -->
+    <!-- OpenCV.js Kütüphanesi -->
     <script async src="https://docs.opencv.org/4.x/opencv.js" type="text/javascript"></script>
 </head>
 <body>
     <h1>1000'lik Yapboz Çözücü</h1>
     
     <div class="container">
-        <!-- 1. Adım: Referans Resim Yükleme -->
-        <div class="upload-section">
-            <label for="ref-image">Yapbozun Bitmiş Halini Yükleyin:</label>
-            <input type="file" id="ref-image" accept="image/*">
-            <img id="preview-ref" style="display:none; max-width:100%; margin-top:10px; border-radius:5px;">
-        </div>
-
-        <hr>
-
-        <!-- 2. Adım: Kamera Alanı -->
+        <!-- Canlı Kamera Yayını -->
         <video id="video" autoplay playsinline></video>
         <canvas id="canvas" style="display:none;"></canvas>
         
-        <button id="capture-btn">Parçayı Tara</button>
+        <!-- Kontrol Butonları -->
+        <div class="button-group">
+            <button id="capture-ref-btn">1. Adım: Büyük Resmi Çek</button>
+            <button id="capture-piece-btn" disabled style="background-color: #95a5a6;">2. Adım: Parçayı Tara</button>
+        </div>
+
+        <!-- Çekilen Büyük Resmin Önizlemesi -->
+        <div id="preview-container" style="display:none; margin-top:15px; width:100%; text-align:center;">
+            <p style="font-size:12px; color:#7f8c8d; margin:5px 0;">Kaydedilen Büyük Resim:</p>
+            <canvas id="ref-canvas" style="max-width:100%; border: 2px solid #2ecc71; border-radius:5px;"></canvas>
+        </div>
     </div>
 
     <div id="result">
-        <h3>Analiz Sonucu:</h3>
-        <p id="status">Lütfen önce bitmiş yapboz resmini yükleyin.</p>
+        <h3>Sistem Durumu:</h3>
+        <p id="status">Lütfen kamerayı yapboz kutusuna doğrultup "Büyük Resmi Çek" butonuna basın.</p>
     </div>
 
     <script src="app.js"></script>
 </body>
+</html>
