@@ -4,8 +4,8 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: #121212; /* Telefon şarjı için koyu tema */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #121212; 
     color: #ffffff;
     margin: 0;
     padding: 15px;
@@ -15,27 +15,27 @@ body {
 
 .app-wrapper {
     width: 100%;
-    max-width: 450px; /* Telefon genişliği sınırı */
+    max-width: 450px; 
     display: flex;
     flex-direction: column;
     gap: 15px;
 }
 
 h1 {
-    font-size: 20px;
+    font-size: 22px;
     text-align: center;
     margin: 10px 0 5px 0;
-    color: #e0e0e0;
+    color: #f1c40f; /* Yapboz sarısı accent */
 }
 
 .camera-container {
     position: relative;
     width: 100%;
-    aspect-ratio: 4 / 3; /* Mobil kameraların standart oranı */
+    aspect-ratio: 4 / 3; 
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-    border: 2px solid #333;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    border: 2px solid #2c3e50;
 }
 
 video {
@@ -44,34 +44,40 @@ video {
     object-fit: cover;
 }
 
-/* Telefonla parçayı odaklarken merkeze hizalamak için vizör çizgisi */
+/* Parçayı tam ortaya getirmeleri için geliştirilmiş hedef vizörü */
 .camera-overlay {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 80px;
-    height: 80px;
-    border: 2px dashed rgba(255, 255, 255, 0.5);
+    width: 90px;
+    height: 90px;
+    border: 3px dashed #f1c40f; /* Dikkat çekici sarı kesikli çizgi */
     border-radius: 50%;
     pointer-events: none;
+    background: rgba(241, 196, 15, 0.05);
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.2); /* Vizör dışını hafifçe karartır focus sağlar */
 }
 
 .button-group {
     display: flex;
-    gap: 10px;
+    gap: 12px;
 }
 
 button {
     flex: 1;
     border: none;
-    padding: 15px 10px;
+    padding: 16px 10px;
     font-size: 14px;
     font-weight: bold;
-    border-radius: 12px;
+    border-radius: 14px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: transform 0.1s ease, background-color 0.2s;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+}
+
+button:active {
+    transform: scale(0.97);
 }
 
 #capture-ref-btn {
@@ -87,11 +93,12 @@ button {
 #result {
     background: #1e1e1e;
     padding: 15px;
-    border-radius: 12px;
+    border-radius: 14px;
     text-align: center;
-    border-left: 4px solid #3498db;
+    border-left: 5px solid #f1c40f;
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.6;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 #preview-container {
@@ -100,15 +107,17 @@ button {
 }
 
 #preview-container p {
-    font-size: 12px;
-    color: #aaa;
-    margin-bottom: 5px;
+    font-size: 13px;
+    color: #bdc3c7;
+    margin-bottom: 8px;
+    font-weight: 500;
 }
 
 #ref-canvas {
     width: 100%;
-    max-height: 150px;
+    max-height: 260px; /* Görsel alanın telefonda daha rahat seçilmesi için genişletildi */
     object-fit: contain;
-    border-radius: 8px;
-    border: 1px solid #444;
+    border-radius: 12px;
+    border: 2px solid #34495e;
+    background-color: #000;
 }
